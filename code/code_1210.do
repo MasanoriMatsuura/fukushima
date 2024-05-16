@@ -3,7 +3,7 @@
 
 clear
 set more off
-set matsize 11000
+clear mata
 set maxvar   32000
  
 global data="C:\Users\mm_wi\Documents\research\jp_eq\data\stata\data"
@@ -25,6 +25,7 @@ rename rc04  mnc
 rename rc05  omnc 
 rename rc06  vil 
 
+*関係ないデータを落とす
 
 ******キョリをmerge
 merge m:m  prfctr mnc  omnc  vil  using distance_2015.dta
@@ -508,7 +509,6 @@ by year, sort:tab sv   select
 *******treat town
 gen treat_town = . 
 
-
 *JAあいづ
 *会津若松市
 *replace treat_town = 1 if mnc == 202 & prfctr == 7
@@ -553,12 +553,6 @@ replace treat_town = 1 if mnc == 405 & prfctr == 7
 *replace treat_town = 1 if mnc == 402 & prfctr == 7
 
 
-
-
-
-
-
-
 *******control town
 gen control_town =.
 
@@ -584,20 +578,21 @@ replace treat_2 = 0 if control_town == 1
 by year, sort: tab treat_2 if slct== 1
 by year, sort: tab treat_2 if select== 1
 
+save panel.dta, replace
 
-
-
+use panel, clear
 
 *松浦さんリクエスト*
-log using "/Users/takayamataisuke/Library/CloudStorage/Dropbox/福島風評被害/kekka_0112_vol2.smcl", replace 
+log using kekka_0112_vol2.smcl, replace 
 
 ******************************DID *************************
 global outcome IHS_lent_ha IHS_lent_pd_ha IHS_land_pd IHS_clt_pd  env_comp  IHS_lent IHS_rev IHS_rev_ha 
 
 foreach out in $outcome{
-reghdfe `out' treat i.year  c.age##c.age i.gender d_successor i.corpration pop i.d_senken_1 if slct== 1 , abs(id  )  cluster(id vil_id) 
+reghdfe `out' treat i.year c.age##c.age i.gender d_successor i.corpration pop i.d_senken_1 if slct== 1 , abs(id)  cluster(id vil_id) 
  }
  
+
 ******Event study-Plot********
 forvalues num = 1995/2015{
 gen d_`num' = .
@@ -607,12 +602,11 @@ capture replace d_`num' = 0 if   treat_2 == 0
 }
 
 foreach out in IHS_lent_ha IHS_lent_pd_ha IHS_land_pd IHS_clt_pd env_comp IHS_lent IHS_rev IHS_rev_ha {
-reghdfe `out' d_1995  d_2000 d_2005  d_2015 i.year  c.age##c.age i.gender d_successor i.corpration pop i.d_senken_1 if slct== 1,abs(id year) cluster(id vil_id) 
+reghdfe `out' d_1995  d_2000 d_2005 d_2015 i.year c.age##c.age i.gender d_successor i.corpration pop i.d_senken_1 if slct== 1,abs(id year) cluster(id vil_id) 
 
 coefplot, keep(d_1995  d_2000 d_2005  d_2015)  vert omit relocate(d_1995=1995 d_2000=2000 d_2005=2005 d_2010=2010 d_2015=2015      )  xlabel(1995(5)2015) yline(0) level(5 95) ylabel(,grid) title("`out'") 
 
 graph export "$figure/`out'.pdf", as(pdf) replace 
-
 
 }
 
@@ -624,7 +618,7 @@ log close
 ******************************Event study*************************
 ******************************************************************
 
-log using "/Users/takayamataisuke/Library/CloudStorage/Dropbox/福島風評被害/kekka_1229.smcl", replace 
+log using kekka_1229.smcl, replace 
 
 global outcome sv  IHS_land IHS_land_ha IHS_own IHS_own_ha IHS_lent IHS_lent_ha IHS_aband IHS_aband_ha  IHS_brrw IHS_brrw_ha IHS_own_pd IHS_own_pd_ha IHS_lent_pd IHS_lent_pd_ha IHS_aband_pd IHS_aband_pd_ha IHS_brrw_pd IHS_brrw_pd_ha IHS_land_pd IHS_land_pd_ha IHS_clt_pd IHS_clt_pd_ha IHS_rev IHS_rev_ha env_manure env_pst env_comp
 
@@ -681,7 +675,7 @@ coefplot, keep(d_1995  d_2000 d_2005  d_2015)  vert omit relocate(d_1995=1995 d_
 
 graph combine `out' `out'_com
 
-graph save "Graph" "/Users/takayamataisuke/Library/CloudStorage/Dropbox/福島風評被害/田の経営耕地面積.gph",replace 
+graph save $figure/pddyfld.gph",replace 
  }
  
  
